@@ -2,13 +2,17 @@ package IT342_G6_Bargamento_Lab1.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
+@EnableWebSecurity
 public class SecurityConfig {
 
+    // Requirement: Password encryption (BCrypt)
     @Bean
     public BCryptPasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -16,11 +20,15 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.csrf().disable() // Required for testing APIs via Postman/React
-                .authorizeHttpRequests()
-                .requestMatchers("/api/auth/**").permitAll() // Allows Register/Login
-                .anyRequest().authenticated()
-                .and().httpBasic();
+        http
+                .csrf(csrf -> csrf.disable()) // Disable for development/React testing
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/auth/**").permitAll() // Registration/Login is public
+                        .requestMatchers("/api/user/me").authenticated() // Requirement: GET /api/user/me is protected
+                        .anyRequest().permitAll()
+                )
+                .httpBasic(Customizer.withDefaults()); // Standard for Lab 2
+
         return http.build();
     }
 }
